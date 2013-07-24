@@ -1,0 +1,43 @@
+Return-Path: <blast@hardchee.se>
+Received: from mail.work.tld ([unix socket])
+	 by dmrb00218.lunarmania.com (Cyrus v2.2.13-Debian-2.2.13-14+b1) with LMTPA;
+	 Thu, 30 Oct 2008 03:49:56 -0700
+X-Sieve: CMU Sieve 2.2
+Received: from hardchee.se (1.2.3.4.static.mtpk.ca.charter.com [1.2.3.4])
+	by mail.work.tld (Postfix) with ESMTP id 7C547B8DD77
+	for <devon@work.tld>; Thu, 30 Oct 2008 03:49:56 -0700 (PDT)
+Received: from localhost (localhost [127.0.0.1])
+	by hardchee.se (Postfix) with ESMTP id 43623EA309
+	for <devon@work.tld>; Thu, 30 Oct 2008 03:58:29 -0700 (PDT)
+Received: from hardchee.se ([127.0.0.1])
+ by localhost (games21 [127.0.0.1]) (amavisd-new, port 10024) with ESMTP
+ id 15242-09 for <devon@work.tld>; Thu, 30 Oct 2008 03:58:01 -0700 (PDT)
+Received: from [192.168.0.130] (dsl092-032-215.lax1.dsl.speakeasy.net [4.3.2.1])
+	by hardchee.se (Postfix) with ESMTP id 255B5EA2F3
+	for <devon@work.tld>; Thu, 30 Oct 2008 03:58:01 -0700 (PDT)
+Message-Id: <13A41F6B-BA5A-41DA-813E-9CC92ECAC5BD@hardchee.se>
+From: Devon Stewart <blast@hardchee.se>
+To: Devon Stewart <devon@work.tld>
+Content-Type: multipart/alternative; boundary=Apple-Mail-80-96425195
+Mime-Version: 1.0 (Apple Message framework v929.2)
+Subject: Alarm - Jury Duty
+Date: Thu, 30 Oct 2008 03:57:24 -0700
+X-Mailer: Apple Mail (2.929.2)
+X-Virus-Scanned: by amavisd-new at hardchee.se
+
+
+--Apple-Mail-80-96425195
+Content-Type: text/plain;
+	charset=US-ASCII;
+	format=flowed
+Content-Transfer-Encoding: 7bit
+
+November 3, 2008 8:00 AM : Jury Duty
+--Apple-Mail-80-96425195
+Content-Type: text/html;
+	charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+
+<html><body style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space; "><div><div style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; "><font face="Helvetica" size="3" style="font: 12.0px Helvetica">November 3, 2008 8:00 AM : Jury Duty</font></div> </div>
+</body></html>
+--Apple-Mail-80-96425195--
