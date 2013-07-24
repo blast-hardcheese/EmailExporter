@@ -1,3 +1,5 @@
+package se.hardchee.MailConverter
+
 import javax.mail.Session
 import java.util.Properties
 import javax.mail.internet.MimeMessage
