@@ -2,6 +2,7 @@ package se.hardchee.MailConverter
 
 import java.io.ByteArrayInputStream
 import java.io.File
+import java.io.FileOutputStream
 
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone
@@ -92,10 +93,20 @@ object app {
             |""".stripMargin
     }
 
+    def writeOut(inpath: String, message: String) {
+        val basePath = inpath.split("/").toList.last
+        val prefix = "/tmp/out-"
+        val suffix = ""
+
+        val output = new FileOutputStream(new File(prefix + basePath + suffix))
+        output.write(message.getBytes)
+    }
+
     def main(args: Array[String]) {
         val target :: files = args.toList
-        val messages = files.flatMap { readRaw }.map { readMessage }.map { formatMail }
-        println(messages.mkString)
+        for(file <- files) {
+            val out = readRaw(file).map { readMessage }.map { formatMail }.map { writeOut(file, _) }
+        }
     }
 }
 
