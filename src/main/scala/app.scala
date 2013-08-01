@@ -30,9 +30,13 @@ object parser extends RegexParsers {
 }
 
 object app {
-    def readRaw(path: String): String = {
-        val content = io.Source.fromFile(new java.io.File(path)).mkString
-        content
+    def readRaw(path: String): Option[String] = {
+        val file = new File(path)
+        if(file.isFile) {
+            Some(io.Source.fromFile(file).mkString)
+        } else {
+            None
+        }
     }
 
     def readMessage(content: String): MimeMessage = {
@@ -47,8 +51,17 @@ object app {
         "foo"
     }
 
+    def prependFrom(raw: String, message: MimeMessage) = {
+        generateFrom(message) + "\r\n" + raw
+    }
+
     def main(args: Array[String]) {
-        args.toList.map { readRaw }.map { content => generateFrom(readMessage(content)) } map { println }
+        val target :: files = args.toList
+        println(files)
+        println(target)
+        val output = new FileOutputStream(new File(target))
+        val messages = files.flatMap { readRaw }.map { content => prependFrom(content, readMessage(content)) }
+        output.write(messages.mkString("\r\n\r\n").getBytes)
     }
 }
 
