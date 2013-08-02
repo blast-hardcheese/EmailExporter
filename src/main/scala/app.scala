@@ -7,8 +7,6 @@ import javax.mail.Session
 import javax.mail.internet.MimeMessage
 import javax.mail.Message
 import javax.mail.internet.MimeMultipart
-import javax.mail.internet.MimeBodyPart
-import javax.mail.BodyPart
 
 object app {
     def readMessage(content: String): MimeMessage = {
@@ -22,56 +20,6 @@ object app {
     def formatMail(message: MimeMessage): String = {
         import se.hardchee.MailConverter.ImplicitFieldFormatters._
 
-        def getBodyPart(multipart: MimeMultipart, identifier: String) = {
-            val preamble = Option(multipart.getPreamble())
-
-            (0 until multipart.getCount()).foldLeft[Option[String]](None){ case (last, i: Int) =>
-                if(last != None)
-                    last
-                else {
-                    multipart.getBodyPart(i) match {
-                        case mbp: MimeBodyPart if( mbp.getContentType().startsWith(identifier)
-                                                && mbp.getContent().toString != "") => Some(mbp.getContent().toString)
-                        case _ => None
-                    }
-                }
-            }
-        }
-
-        def extractAllBodyParts(mp: MimeMultipart): List[BodyPart] = {
-            ((0 until mp.getCount()).flatMap { i => {
-                val bp = mp.getBodyPart(i)
-                val r = Option(bp.getContent()) match {
-                    case Some(mp: MimeMultipart) => extractAllBodyParts(mp)
-                    case _ => List()
-                }
-                bp +: r
-            }
-            }).toList
-        }
-
-        def extractAttachmentNames(message: MimeMessage): Option[List[String]] = {
-            (Option(message.getContent()) match {
-                case Some(mp:MimeMultipart) => Some(extractAllBodyParts(mp).flatMap( makeFileName ))
-                case _ => None
-            }) match {
-                case Some(List()) => None // Empty lists shouldn't be displayed.
-                case x => x
-            }
-        }
-
-        def makeFileSize(_size: Int) = {
-            def findFileSize(size: Int) = "KMG".foldLeft[Tuple2[Double, Char]]( (size.toDouble, 'B') ) {
-                case ((size, last), next) if(size / 1024 > 1.5) => (size / 1024, next)
-                case (last, next) => last
-            }
-
-            val (size, suffix) = findFileSize(_size)
-            f"$size%.2f $suffix%c"
-        }
-
-        def makeFileName(bp: BodyPart): Option[String] = Option(bp.getFileName()).map({ name => val size = makeFileSize(bp.getSize()); s"$name ($size)" })
-
         val from = message.getFrom()
         val to = message.getRecipients(Message.RecipientType.TO)
         val cc = message.getRecipients(Message.RecipientType.CC)
@@ -79,11 +27,11 @@ object app {
         val date = message.getSentDate()
         val subject = message.getSubject()
         val body = (Option(message.getContent()) match {
-            case Some(mp:MimeMultipart) => getBodyPart(mp, "text/plain")
+            case Some(mp:MimeMultipart) => MailUtilities.getBodyPart(mp, "text/plain")
             case Some(m) => Some(m.toString)
             case x: Option[_] => x
         }).getOrElse("// This message has no content")
-        val attachmentNames: Option[List[String]] = extractAttachmentNames(message)
+        val attachmentNames: Option[List[String]] = MailUtilities.extractAttachmentNames(message)
 
         def convertList(label: String, x: Option[List[_]]) = x map { label + ": " + _.mkString(", ") }
         def convert(label: String, x: Option[String]) = x map { label + ": " + _ }

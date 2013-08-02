@@ -68,4 +68,60 @@ object ImplicitFieldFormatters {
     implicit def wrapString(x: String): Option[String] = Option(x)
 }
 
+import javax.mail.internet.MimeBodyPart
+import javax.mail.internet.MimeMultipart
+import javax.mail.internet.MimeMessage
+import javax.mail.BodyPart
+
+object MailUtilities {
+    def makeFileName(bp: BodyPart): Option[String] = Option(bp.getFileName()).map({ name => val size = makeFileSize(bp.getSize()); s"$name ($size)" })
+    def makeFileSize(_size: Int) = {
+        def findFileSize(size: Int) = "KMG".foldLeft[Tuple2[Double, Char]]( (size.toDouble, 'B') ) {
+            case ((size, last), next) if(size / 1024 > 1.5) => (size / 1024, next)
+            case (last, next) => last
+        }
+
+        val (size, suffix) = findFileSize(_size)
+        f"$size%.2f $suffix%c"
+    }
+
+    def getBodyPart(multipart: MimeMultipart, identifier: String): Option[String] = {
+        val preamble = Option(multipart.getPreamble())
+
+        (0 until multipart.getCount()).foldLeft[Option[String]](None){ case (last, i: Int) =>
+            if(last != None)
+                last
+            else {
+                multipart.getBodyPart(i) match {
+                    case mbp: MimeBodyPart if( mbp.getContentType().startsWith(identifier)
+                                            && mbp.getContent().toString != "") => Some(mbp.getContent().toString)
+                    case _ => None
+                }
+            }
+        }
+    }
+
+    def extractAllBodyParts(mp: MimeMultipart): List[BodyPart] = {
+        ((0 until mp.getCount()).flatMap { i => {
+            val bp = mp.getBodyPart(i)
+            val r = Option(bp.getContent()) match {
+                case Some(mp: MimeMultipart) => extractAllBodyParts(mp)
+                case _ => List()
+            }
+            bp +: r
+        }
+        }).toList
+    }
+
+    def extractAttachmentNames(message: MimeMessage): Option[List[String]] = {
+        (Option(message.getContent()) match {
+            case Some(mp:MimeMultipart) => Some(extractAllBodyParts(mp).flatMap( makeFileName ))
+            case _ => None
+        }) match {
+            case Some(List()) => None // Empty lists shouldn't be displayed.
+            case x => x
+        }
+    }
+}
+
 // vim: set ts=4 sw=4 et:
