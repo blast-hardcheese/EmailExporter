@@ -18,8 +18,7 @@ import javax.mail.BodyPart
 object app {
     val desiredTimezone = DateTimeZone.forID("America/Los_Angeles")
 
-    def readRaw(path: String): Option[String] = {
-        val file = new File(path)
+    def readRaw(file: File): Option[String] = {
         if(file.isFile) {
             Some(io.Source.fromFile(file).mkString)
         } else {
@@ -130,17 +129,32 @@ object app {
 
     def stripFilename(path: String) = path.split("/").toList.last
 
-    def processFiles(outputFormat: String, files: List[String]) {
+    def processFiles(outputFormat: String, files: List[java.io.File]) {
         for(file <- files) {
-            val outfile = outputFormat.format(stripFilename(file))
+            val fpath = file.getPath
+            val outfile = outputFormat.format(stripFilename(fpath))
             println("Output: " + outfile)
             val out = readRaw(file).map { readMessage }.map { formatMail }.map { writeOut(outfile, _) }
         }
     }
 
+    def processFilePaths(outputFormat: String, _files: List[String]) {
+        val files = _files.map({ new java.io.File(_) })
+        processFiles(outputFormat, files)
+    }
+
+    def processDirectories(outputFormat: String, directories: List[String]) {
+        for(path <- directories) {
+            val dir = new File(path)
+            if(dir.isDirectory) {
+                Option(dir.listFiles).map({ fpaths => processFiles(outputFormat, fpaths.toList) })
+            }
+        }
+    }
+
     def main(args: Array[String]) {
         val outformat :: files = args.toList
-        processFiles(outformat, files)
+        processFilePaths(outformat, files)
     }
 }
 
