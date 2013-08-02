@@ -3,6 +3,9 @@ package se.hardchee.MailConverter
 import java.io.File
 import java.io.FileOutputStream
 
+import org.joda.time.DateTime
+import org.joda.time.DateTimeZone
+
 object MailReader {
     def processDirectories(outputFormat: String, directories: List[String]) {
         for(path <- directories) {
@@ -43,6 +46,26 @@ object MailReader {
         val output = new FileOutputStream(new File(outpath))
         output.write(message.getBytes)
     }
+}
+
+object ImplicitFieldFormatters {
+    import scala.language.implicitConversions
+
+    val desiredTimezone = DateTimeZone.forID("America/Los_Angeles")
+
+    implicit def makeDate(date: java.util.Date): Option[String] = {
+        Option(date).map({
+            new DateTime(_)
+                .withZone(desiredTimezone)
+                .toString("Y/M/d H:m:s (Z)")
+        })
+    }
+
+    implicit def wrapList(x: Array[_]): Option[List[_]] = {
+        Option(x).map { _.toList }
+    }
+
+    implicit def wrapString(x: String): Option[String] = Option(x)
 }
 
 // vim: set ts=4 sw=4 et:

@@ -2,9 +2,6 @@ package se.hardchee.MailConverter
 
 import java.io.ByteArrayInputStream
 
-import org.joda.time.DateTime
-import org.joda.time.DateTimeZone
-
 import java.util.Properties
 import javax.mail.Session
 import javax.mail.internet.MimeMessage
@@ -14,8 +11,6 @@ import javax.mail.internet.MimeBodyPart
 import javax.mail.BodyPart
 
 object app {
-    val desiredTimezone = DateTimeZone.forID("America/Los_Angeles")
-
     def readMessage(content: String): MimeMessage = {
         // from http://stackoverflow.com/questions/3444660/java-email-message-parser
         val s = Session.getDefaultInstance(new Properties())
@@ -25,13 +20,7 @@ object app {
     }
 
     def formatMail(message: MimeMessage): String = {
-        def makeDate(date: java.util.Date) = {
-            Option(date).map({
-                new DateTime(_)
-                    .withZone(desiredTimezone)
-                    .toString("Y/M/d H:m:s (Z)")
-            })
-        }
+        import se.hardchee.MailConverter.ImplicitFieldFormatters._
 
         def getBodyPart(multipart: MimeMultipart, identifier: String) = {
             val preamble = Option(multipart.getPreamble())
@@ -71,10 +60,6 @@ object app {
             }
         }
 
-        def wrapList(x: Array[_]) = {
-            Option(x).map { _.toList }
-        }
-
         def findFileSize(size: Int) = "KMG".foldLeft[Tuple2[Double, Char]]( (size.toDouble, 'B') ){
             case ((size, last), next) if(size / 1024 > 1.5) => (size / 1024, next)
             case (last, next) => last
@@ -87,12 +72,12 @@ object app {
 
         def makeFileName(bp: BodyPart): Option[String] = Option(bp.getFileName()).map({ name => val size = makeFileSize(bp.getSize()); s"$name ($size)" })
 
-        val from = wrapList(message.getFrom())
-        val to = wrapList(message.getRecipients(Message.RecipientType.TO))
-        val cc = wrapList(message.getRecipients(Message.RecipientType.CC))
-        val bcc = wrapList(message.getRecipients(Message.RecipientType.BCC))
-        val date = makeDate(message.getSentDate())
-        val subject = Option(message.getSubject())
+        val from = message.getFrom()
+        val to = message.getRecipients(Message.RecipientType.TO)
+        val cc = message.getRecipients(Message.RecipientType.CC)
+        val bcc = message.getRecipients(Message.RecipientType.BCC)
+        val date = message.getSentDate()
+        val subject = message.getSubject()
         val body = (Option(message.getContent()) match {
             case Some(mp:MimeMultipart) => getBodyPart(mp, "text/plain")
             case Some(m) => Some(m.toString)
