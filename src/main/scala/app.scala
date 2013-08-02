@@ -76,6 +76,18 @@ object app {
             Option(x).map { _.toList }
         }
 
+        def findFileSize(size: Int) = "KMG".foldLeft[Tuple2[Double, Char]]( (size.toDouble, 'B') ){
+            case ((size, last), next) if(size / 1024 > 1.5) => (size / 1024, next)
+            case (last, next) => last
+        }
+
+        def makeFileSize(_size: Int) = {
+            val (size, suffix) = findFileSize(_size)
+            f"$size%.2f $suffix%c"
+        }
+
+        def makeFileName(bp: BodyPart): Option[String] = Option(bp.getFileName()).map({ name => val size = makeFileSize(bp.getSize()); s"$name ($size)" })
+
         val from = wrapList(message.getFrom())
         val to = wrapList(message.getRecipients(Message.RecipientType.TO))
         val cc = wrapList(message.getRecipients(Message.RecipientType.CC))
