@@ -123,20 +123,24 @@ object app {
             |""".stripMargin
     }
 
-    def writeOut(inpath: String, message: String) {
-        val basePath = inpath.split("/").toList.last
-        val prefix = "/tmp/out-"
-        val suffix = ""
-
-        val output = new FileOutputStream(new File(prefix + basePath + suffix))
+    def writeOut(outpath: String, message: String) {
+        val output = new FileOutputStream(new File(outpath))
         output.write(message.getBytes)
     }
 
-    def main(args: Array[String]) {
-        val target :: files = args.toList
+    def stripFilename(path: String) = path.split("/").toList.last
+
+    def processFiles(outputFormat: String, files: List[String]) {
         for(file <- files) {
-            val out = readRaw(file).map { readMessage }.map { formatMail }.map { writeOut(file, _) }
+            val outfile = outputFormat.format(stripFilename(file))
+            println("Output: " + outfile)
+            val out = readRaw(file).map { readMessage }.map { formatMail }.map { writeOut(outfile, _) }
         }
+    }
+
+    def main(args: Array[String]) {
+        val outformat :: files = args.toList
+        processFiles(outformat, files)
     }
 }
 
