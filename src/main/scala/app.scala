@@ -60,12 +60,12 @@ object app {
             }
         }
 
-        def findFileSize(size: Int) = "KMG".foldLeft[Tuple2[Double, Char]]( (size.toDouble, 'B') ){
-            case ((size, last), next) if(size / 1024 > 1.5) => (size / 1024, next)
-            case (last, next) => last
-        }
-
         def makeFileSize(_size: Int) = {
+            def findFileSize(size: Int) = "KMG".foldLeft[Tuple2[Double, Char]]( (size.toDouble, 'B') ) {
+                case ((size, last), next) if(size / 1024 > 1.5) => (size / 1024, next)
+                case (last, next) => last
+            }
+
             val (size, suffix) = findFileSize(_size)
             f"$size%.2f $suffix%c"
         }
