@@ -71,6 +71,16 @@ object app {
             }).toList
         }
 
+        def extractAttachmentNames(message: MimeMessage): Option[List[String]] = {
+            (Option(message.getContent()) match {
+                case Some(mp:MimeMultipart) => Some(extractAllBodyParts(mp).flatMap( makeFileName ))
+                case _ => None
+            }) match {
+                case Some(List()) => None // Empty lists shouldn't be displayed.
+                case x => x
+            }
+        }
+
         def wrapList(x: Array[_]) = {
             Option(x).map { _.toList }
         }
@@ -98,10 +108,7 @@ object app {
             case Some(m) => Some(m.toString)
             case x: Option[_] => x
         }).getOrElse("// This message has no content")
-        val attachmentNames: Option[List[String]] = (Option(message.getContent()) match {
-            case Some(mp:MimeMultipart) => Some(extractAllBodyParts(mp).flatMap( makeFileName ))
-            case _ => None
-        })
+        val attachmentNames: Option[List[String]] = extractAttachmentNames(message)
 
         def convertList(label: String, x: Option[List[_]]) = x map { label + ": " + _.mkString(", ") }
         def convert(label: String, x: Option[String]) = x map { label + ": " + _ }
