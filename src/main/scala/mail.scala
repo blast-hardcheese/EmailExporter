@@ -27,7 +27,7 @@ import java.io.FileOutputStream
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone
 
-object MailReader {
+object MailHandler {
     def processDirectories(outputFormat: String, directories: List[String]) {
         for(path <- directories) {
             val dir = new File(path)

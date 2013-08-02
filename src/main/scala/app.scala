@@ -3,7 +3,7 @@ package se.hardchee.MailConverter
 object app {
     def main(args: Array[String]) {
         val outformat :: files = args.toList
-        MailReader.processFilePaths(outformat, files)
+        MailHandler.processFilePaths(outformat, files)
     }
 }
 
