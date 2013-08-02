@@ -13,6 +13,7 @@ import javax.mail.internet.MimeMessage
 import javax.mail.Message
 import javax.mail.internet.MimeMultipart
 import javax.mail.internet.MimeBodyPart
+import javax.mail.BodyPart
 
 object app {
     val desiredTimezone = DateTimeZone.forID("America/Los_Angeles")
@@ -57,6 +58,18 @@ object app {
                     }
                 }
             }
+        }
+
+        def extractAllBodyParts(mp: MimeMultipart): List[BodyPart] = {
+            ((0 until mp.getCount()).flatMap { i => {
+                val bp = mp.getBodyPart(i)
+                val r = Option(bp.getContent()) match {
+                    case Some(mp: MimeMultipart) => extractAllBodyParts(mp)
+                    case _ => List()
+                }
+                bp +: r
+            }
+            }).toList
         }
 
         def wrapList(x: Array[_]) = {
