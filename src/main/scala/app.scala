@@ -99,6 +99,10 @@ object app {
             case Some(m) => Some(m.toString)
             case x: Option[_] => x
         }).getOrElse("// This message has no content")
+        val attachmentNames: Option[List[String]] = (Option(message.getContent()) match {
+            case Some(mp:MimeMultipart) => Some(extractAllBodyParts(mp).flatMap( makeFileName ))
+            case _ => None
+        })
 
         def convertList(label: String, x: Option[List[_]]) = x map { label + ": " + _.mkString(", ") }
         def convert(label: String, x: Option[String]) = x map { label + ": " + _ }
@@ -109,7 +113,8 @@ object app {
             convertList("CC", cc),
             convertList("BCC", bcc),
             convert("Date", date),
-            convert("Subject", subject)
+            convert("Subject", subject),
+            convertList("Attachments", attachmentNames)
         ).flatten.mkString("\n") // convert* produce Option[_]'s, we can use this to generate quick and easy optional headers!
 
         s"""|$headers
