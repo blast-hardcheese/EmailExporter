@@ -143,6 +143,14 @@ object MailUtilities {
             case x => x
         }
     }
+
+    def extractBody(message: MimeMessage): String = {
+        (Option(message.getContent()) match {
+            case Some(mp:MimeMultipart) => MailUtilities.getBodyPart(mp, "text/plain")
+            case Some(m) => Some(m.toString)
+            case None => None
+        }).getOrElse("// This message has no content")
+    }
 }
 
 import javax.mail.Message
@@ -157,11 +165,7 @@ object MailFormatter {
         val bcc = message.getRecipients(Message.RecipientType.BCC)
         val date = message.getSentDate()
         val subject = message.getSubject()
-        val body = (Option(message.getContent()) match {
-            case Some(mp:MimeMultipart) => MailUtilities.getBodyPart(mp, "text/plain")
-            case Some(m) => Some(m.toString)
-            case x: Option[_] => x
-        }).getOrElse("// This message has no content")
+        val body = MailUtilities.extractBody(message)
         val attachmentNames: Option[List[String]] = MailUtilities.extractAttachmentNames(message)
 
         def convertList(label: String, x: Option[List[_]]) = x map { label + ": " + _.mkString(", ") }
