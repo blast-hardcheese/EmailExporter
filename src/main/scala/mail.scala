@@ -156,7 +156,10 @@ object MailUtilities {
 import javax.mail.Message
 
 object MailFormatter {
-    case class ParsedMessage(headers: List[String] = List(), body: String)
+    case class Header(label: String, value: List[String]) {
+        override def toString = "%s: %s".format(label, value.mkString(", "))
+    }
+    case class ParsedMessage(headers: List[Header] = List(), body: String)
 
     def parse(message: MimeMessage): ParsedMessage = {
         import se.hardchee.MailConverter.ImplicitFieldFormatters._
@@ -170,8 +173,9 @@ object MailFormatter {
         val body = MailUtilities.extractBody(message)
         val attachmentNames: Option[List[String]] = MailUtilities.extractAttachmentNames(message)
 
-        def convertList(label: String, x: Option[List[_]]) = x map { label + ": " + _.mkString(", ") }
-        def convert(label: String, x: Option[String]) = x map { label + ": " + _ }
+        def listToString(vals: List[Any]): List[String] = vals map { _.toString }
+        def convertList(label: String, x: Option[List[_]]): Option[Header] = x map { vals => Header(label, listToString(vals)) }
+        def convert(label: String, x: Option[String]):      Option[Header] = x map { vals => Header(label, List(vals)) }
 
         val headers = List(
             convertList("From", from),
