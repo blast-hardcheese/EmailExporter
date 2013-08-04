@@ -156,7 +156,9 @@ object MailUtilities {
 import javax.mail.Message
 
 object MailFormatter {
-    def toString(message: MimeMessage): String = {
+    case class ParsedMessage(headers: List[String] = List(), body: String)
+
+    def parse(message: MimeMessage): ParsedMessage = {
         import se.hardchee.MailConverter.ImplicitFieldFormatters._
 
         val from = message.getFrom()
@@ -179,7 +181,14 @@ object MailFormatter {
             convert("Date", date),
             convert("Subject", subject),
             convertList("Attachments", attachmentNames)
-        ).flatten.mkString("\n") // convert* produce Option[_]'s, we can use this to generate quick and easy optional headers!
+        ).flatten // convert* produce Option[_]'s, we can use this to generate quick and easy optional headers!
+
+        ParsedMessage(headers, body)
+    }
+
+    def toString(message: MimeMessage): String = {
+        val ParsedMessage(_headers, body) = parse(message)
+        val headers = _headers.mkString("\n")
 
         s"""|$headers
             |================================================================================
