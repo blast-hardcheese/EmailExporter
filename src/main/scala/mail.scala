@@ -5,9 +5,19 @@ import javax.mail.Session
 import javax.mail.internet.MimeMessage
 import java.io.ByteArrayInputStream
 
+import org.joda.time.DateTime
+
 object MailCore {
     def filter(message: MimeMessage)(implicit config: Config): Option[MimeMessage] = {
-        Some(message)
+        val sentDate = new DateTime(message.getSentDate)
+
+        val shouldDisplay = List[Boolean](
+            (config.untilDate map { untilDate => sentDate.isBefore(untilDate) }).getOrElse(true),
+            (config.fromDate map { fromDate => sentDate.isAfter(fromDate) }).getOrElse(true)
+        ).foldLeft(true) { (last: Boolean, next: Boolean) => last && next }
+
+        if(shouldDisplay) Some(message)
+        else None
     }
 
     def handleRawMessage(raw: String)(implicit config: Config): Option[String] = {
@@ -61,8 +71,7 @@ object MailHandler {
 
         val outputFormatExtension = config.outputFormat.extension
 
-        println("Output: " + outpath)
-        readRaw(file).flatMap { MailCore.handleRawMessage } map { writeOut(outpath, _) }
+        readRaw(file).flatMap { MailCore.handleRawMessage } map { println("Output: " + outpath); writeOut(outpath, _) }
     }
 
     def processFiles(files: List[java.io.File])(implicit config: Config = defaultConfig) {

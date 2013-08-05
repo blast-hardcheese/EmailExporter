@@ -1,9 +1,14 @@
 package se.hardchee.MailConverter
 
+import org.joda.time.DateTime
+
 case class Config(
     concat: Boolean = false,
     outputDirectory: String = "/tmp/",
     appendExtension: Boolean = true,
+
+    fromDate: Option[DateTime] = None,
+    untilDate: Option[DateTime] = None,
 
     paths: List[java.io.File] = List(),
 
@@ -21,6 +26,11 @@ object app {
 
     def main(args: Array[String]) {
         val parser = new scopt.OptionParser[Config]("EmailExporter") {
+            import scopt.Read
+            import scopt.Read.reads
+            implicit val dateRead: Read[DateTime] = reads { new DateTime(_) }
+            implicit val optionalDateRead: Read[Option[DateTime]] = reads { time => Some(new DateTime(time)) }
+
             head("EmailExporter", "0.1")
 
             opt[Unit]('c', "concat") action { (_, c: Config) => c.copy(concat = true) } text("Concatenate mail files into one big output file")
@@ -30,6 +40,9 @@ object app {
 
 //            opt[String]('i', "input-format") action { (v: String, c: Config) => c.copy(inputFormat = v) } text("Input file format")
             opt[String]('f', "output-format") action { (v: String, c: Config) => c.copy(outputFormat = OutputFormat(v)) } text("Output file format")
+
+            opt[Option[DateTime]]("date-from") action { (v: Option[DateTime], c: Config) => c.copy(fromDate = v) } text("Only process messages after this date")
+            opt[Option[DateTime]]("date-until") action { (v: Option[DateTime], c: Config) => c.copy(untilDate = v) } text("Only process messages before this date")
 
             arg[java.io.File]("<path>...") action {
                 case (v: java.io.File, c: Config) if(v.exists) => c.copy(paths = c.paths :+ v)
