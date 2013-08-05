@@ -6,6 +6,8 @@ libraryDependencies += "joda-time" % "joda-time" % "2.2"
 
 libraryDependencies += "org.joda" % "joda-convert" % "1.3.1"
 
+libraryDependencies += "com.github.scopt" %% "scopt" % "2.1.0"
+
 scalacOptions += "-deprecation"
 
 scalacOptions += "-feature"
