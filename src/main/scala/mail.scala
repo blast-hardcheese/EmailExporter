@@ -90,6 +90,7 @@ object MailHandler {
     def writeOut(outpath: String, message: String) {
         val output = new FileOutputStream(new File(outpath))
         output.write(message.getBytes)
+        output.close()
     }
 }
 
