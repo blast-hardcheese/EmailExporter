@@ -1,6 +1,7 @@
 package se.hardchee.MailConverter
 
 import org.joda.time.DateTime
+import javax.mail.internet.InternetAddress
 
 case class Config(
     concat: Boolean = false,
@@ -11,6 +12,8 @@ case class Config(
     untilDate: Option[DateTime] = None,
 
     paths: List[java.io.File] = List(),
+
+    senders: List[InternetAddress] = List(),
 
 //    inputFormat: String = "cyrus", // TODO: Support other formats
     outputFormat: OutputFormat = OutputFormat("txt")
@@ -30,6 +33,7 @@ object app {
             import scopt.Read.reads
             implicit val dateRead: Read[DateTime] = reads { new DateTime(_) }
             implicit val optionalDateRead: Read[Option[DateTime]] = reads { time => Some(new DateTime(time)) }
+            implicit val mailAddressRead: Read[InternetAddress] = reads { new InternetAddress(_) }
 
             head("EmailExporter", "0.1")
 
@@ -43,6 +47,8 @@ object app {
 
             opt[Option[DateTime]]("date-from") action { (v: Option[DateTime], c: Config) => c.copy(fromDate = v) } text("Only process messages after this date")
             opt[Option[DateTime]]("date-until") action { (v: Option[DateTime], c: Config) => c.copy(untilDate = v) } text("Only process messages before this date")
+
+            opt[InternetAddress]('s', "sender") action { (v: InternetAddress, c: Config) => c.copy(senders = c.senders :+ v) } text("Only match senders in this list") unbounded()
 
             arg[java.io.File]("<path>...") action {
                 case (v: java.io.File, c: Config) if(v.exists) => c.copy(paths = c.paths :+ v)

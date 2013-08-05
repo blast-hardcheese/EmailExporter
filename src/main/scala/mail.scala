@@ -6,15 +6,34 @@ import javax.mail.internet.MimeMessage
 import java.io.ByteArrayInputStream
 
 import org.joda.time.DateTime
+import javax.mail.internet.InternetAddress
+
+object MailComparisons {
+    import scala.language.implicitConversions
+    implicit def foldBoolList(bools: List[Boolean]): Boolean = bools.foldLeft(true) { (last: Boolean, next: Boolean) => last && next }
+    implicit def fromOption(opt: Option[Boolean]): Boolean = opt.getOrElse(true)
+    def foldBoolListFindTrue(bools: List[Boolean]): Boolean = bools.foldLeft(false) { (last: Boolean, next: Boolean) => last || next }
+
+    def compareAddresses(lookingFor: List[InternetAddress], mailHas: List[InternetAddress]): Boolean = {
+        lazy val comparisons = lookingFor.flatMap { lhs => mailHas.map { rhs => lhs.getAddress == rhs.getAddress } }
+        if(lookingFor.isEmpty) true
+        else foldBoolListFindTrue( comparisons )
+    }
+}
 
 object MailCore {
     def filter(message: MimeMessage)(implicit config: Config): Option[MimeMessage] = {
         val sentDate = new DateTime(message.getSentDate)
+        val senders: List[InternetAddress] = message.getFrom.toList map { address => new InternetAddress(address.toString) }
 
-        val shouldDisplay = List[Boolean](
-            (config.untilDate map { untilDate => sentDate.isBefore(untilDate) }).getOrElse(true),
-            (config.fromDate map { fromDate => sentDate.isAfter(fromDate) }).getOrElse(true)
-        ).foldLeft(true) { (last: Boolean, next: Boolean) => last && next }
+        import MailComparisons._
+
+        val shouldDisplay: Boolean = List[Boolean](
+            compareAddresses(config.senders, senders),
+
+            (config.untilDate map { untilDate => sentDate.isBefore(untilDate) }),
+            (config.fromDate map { fromDate => sentDate.isAfter(fromDate) })
+        )
 
         if(shouldDisplay) Some(message)
         else None
