@@ -6,14 +6,18 @@ import javax.mail.internet.MimeMessage
 import java.io.ByteArrayInputStream
 
 object MailCore {
-    def handleRawMessage(raw: String, outputFormat: String) = {
-        val message: MimeMessage = readMessage(raw)
-        val output: String = outputFormat match {
-            case f if(f.toLowerCase() == "rtf") => MailFormatter.toRTF(message)
-            case f if(f.toLowerCase() == "txt") => MailFormatter.toString(message)
-            case _ => MailFormatter.toString(message)
+    def filter(message: MimeMessage)(implicit config: Config): Option[MimeMessage] = {
+        Some(message)
+    }
+
+    def handleRawMessage(raw: String)(implicit config: Config): Option[String] = {
+        filter(readMessage(raw)).map { message =>
+            config.outputFormat match {
+                case OutputFormat(f) if(f.toLowerCase() == "rtf") => MailFormatter.toRTF(message)
+                case OutputFormat(f) if(f.toLowerCase() == "txt") => MailFormatter.toString(message)
+                case _ => MailFormatter.toString(message)
+            }
         }
-        output
     }
 
     def readMessage(content: String): MimeMessage = {
@@ -51,7 +55,7 @@ object MailHandler {
         val outputFormatExtension = config.outputFormat.extension
 
         println("Output: " + outpath)
-        readRaw(file).map { MailCore.handleRawMessage(_, outputFormatExtension) } map { writeOut(outpath, _) }
+        readRaw(file).flatMap { MailCore.handleRawMessage } map { writeOut(outpath, _) }
     }
 
     def processFiles(files: List[java.io.File])(implicit config: Config = defaultConfig) {
