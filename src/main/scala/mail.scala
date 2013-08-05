@@ -6,7 +6,7 @@ import javax.mail.internet.MimeMessage
 import java.io.ByteArrayInputStream
 
 object MailCore {
-    def handleRawMessage(raw: String, outputFormat: String = "txt") = {
+    def handleRawMessage(raw: String, outputFormat: String) = {
         val message: MimeMessage = readMessage(raw)
         val output: String = outputFormat match {
             case f if(f.toLowerCase() == "rtf") => MailFormatter.toRTF(message)
@@ -32,16 +32,9 @@ import org.joda.time.DateTime
 import org.joda.time.DateTimeZone
 
 object MailHandler {
-    def processDirectories(outputFormat: String, directories: List[String]) {
-        for(path <- directories) {
-            val dir = new File(path)
-            if(dir.isDirectory) {
-                Option(dir.listFiles).map({ fpaths => processFiles(outputFormat, fpaths.toList) })
-            }
-        }
-    }
+    val defaultConfig = Config()
 
-    def processFiles(outputFormat: String, files: List[java.io.File]) {
+    def processFile(file: java.io.File)(implicit config: Config = defaultConfig) {
         def stripFilename(path: String) = path.split("/").toList.last
 
         def readRaw(file: File): Option[String] = {
@@ -52,20 +45,43 @@ object MailHandler {
             }
         }
 
+        val fpath = file.getPath
+        val outpath = config.outputDirectory + stripFilename(fpath) + config.outputFormat.extension
 
-        for(file <- files) {
-            val fpath = file.getPath
-            val outfile = outputFormat.format(stripFilename(fpath))
-            println("Output: " + outfile)
-            readRaw(file).map { MailCore.handleRawMessage } map { writeOut(outfile, _) }
+        val outputFormatExtension = config.outputFormat.extension
+
+        println("Output: " + outpath)
+        readRaw(file).map { MailCore.handleRawMessage(_, outputFormatExtension) } map { writeOut(outpath, _) }
+    }
+
+    def processFiles(files: List[java.io.File])(implicit config: Config = defaultConfig) {
+        files.map { processFile }
+    }
+
+    def processFilePaths(_files: List[String])(implicit config: Config = defaultConfig) {
+        val files = _files.map({ new java.io.File(_) })
+        processFiles(files)
+    }
+
+    def processDirectory(directory: java.io.File)(implicit config: Config = defaultConfig) {
+            if(directory.isDirectory) {
+                Option(directory.listFiles).map({ fpaths => processFiles(fpaths.toList) })
+            }
+    }
+
+    def processDirectories(directories: List[String])(implicit config: Config = defaultConfig) {
+        for(path <- directories) {
+            val dir = new File(path)
+            processDirectory(dir)
         }
     }
 
-    def processFilePaths(outputFormat: String, _files: List[String]) {
-        val files = _files.map({ new java.io.File(_) })
-        processFiles(outputFormat, files)
+    def processConfig(implicit config: Config) {
+        for(file <- config.paths) file match {
+            case dir if(dir.exists && dir.isDirectory) => processDirectory(dir)
+            case file if(file.exists && file.isFile) => processFile(file)
+        }
     }
-
 
     def writeOut(outpath: String, message: String) {
         val output = new FileOutputStream(new File(outpath))
