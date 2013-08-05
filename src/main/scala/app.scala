@@ -8,8 +8,10 @@ case class Config(
     paths: List[java.io.File] = List(),
 
 //    inputFormat: String = "cyrus", // TODO: Support other formats
-    outputFormat: String = "txt"
+    outputFormat: OutputFormat = OutputFormat("txt")
 )
+
+case class OutputFormat(extension: String)
 
 
 object app {
@@ -27,7 +29,7 @@ object app {
             opt[Unit]('x', "extension") action { (_, c: Config) => c.copy(appendExtension = true) } text("Append file extension to format")
 
 //            opt[String]('i', "input-format") action { (v: String, c: Config) => c.copy(inputFormat = v) } text("Input file format")
-            opt[String]('f', "output-format") action { (v: String, c: Config) => c.copy(outputFormat = v) } text("Output file format")
+            opt[String]('f', "output-format") action { (v: String, c: Config) => c.copy(outputFormat = OutputFormat(v)) } text("Output file format")
 
             arg[java.io.File]("<path>...") action {
                 case (v: java.io.File, c: Config) if(v.exists) => c.copy(paths = c.paths :+ v)
