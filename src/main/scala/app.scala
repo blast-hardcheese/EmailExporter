@@ -16,6 +16,7 @@ case class Config(
     senders: List[InternetAddress] = List(),
     recipients: List[InternetAddress] = List(),
     allRecipientsRequired: Boolean = false,
+    highlightRecipients: List[InternetAddress] = List(),
 
 //    inputFormat: String = "cyrus", // TODO: Support other formats
     outputFormat: OutputFormat = OutputFormat("txt")
@@ -54,6 +55,7 @@ object app {
             opt[InternetAddress]('s', "sender") action { (v: InternetAddress, c: Config) => c.copy(senders = c.senders :+ v) } text("Only match senders in this list") unbounded()
             opt[InternetAddress]('r', "recipient") action { (v: InternetAddress, c: Config) => c.copy(recipients = c.recipients :+ v) } text("Only match recipients in this list") unbounded()
             opt[Unit]('a', "all-recipients") action { (_, c: Config) => c.copy(allRecipientsRequired = true) } text("Require all recipients (instead of just some)")
+            opt[InternetAddress]('l', "highlight") action { (v: InternetAddress, c: Config) => c.copy(highlightRecipients = c.highlightRecipients :+ v) } text("Highlight particular recipients in To fields") unbounded()
 
             arg[java.io.File]("<path>...") action {
                 case (v: java.io.File, c: Config) if(v.exists) => c.copy(paths = c.paths :+ v)

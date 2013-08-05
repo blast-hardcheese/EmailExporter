@@ -292,7 +292,7 @@ object MailFormatter {
                 case x => x.toString
             }
 
-            val lookingFor: List[InternetAddress] = List(new InternetAddress("Devon Stewart <devon@work.tld>"), new InternetAddress("blast@hardchee.se"))  // FIXME: Refactor this out into highlight flags
+            val lookingFor: List[InternetAddress] = config.highlightRecipients
             vals match {
                 case Nil => Nil
                 case (x:InternetAddress) :: xs if(MailComparisons.compareAddresses(lookingFor, List[InternetAddress](x))) => highlight(x) :: highlightNames(normal, highlight, xs)
