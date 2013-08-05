@@ -16,7 +16,7 @@ case class OutputFormat(extension: String)
 
 object app {
     def useConfig(config: Config) {
-        MailHandler.processFiles(config.outputDirectory + "/%s", config.paths)
+        MailHandler.processConfig(config)
     }
 
     def main(args: Array[String]) {
