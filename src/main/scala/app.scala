@@ -26,6 +26,9 @@ object app {
             opt[String]('o', "outputdir") action { (v: String, c: Config) => c.copy(outputDirectory = v) } text("Directory to put output files")
             opt[Unit]('x', "extension") action { (_, c: Config) => c.copy(appendExtension = true) } text("Append file extension to format")
 
+//            opt[String]('i', "input-format") action { (v: String, c: Config) => c.copy(inputFormat = v) } text("Input file format")
+            opt[String]('f', "output-format") action { (v: String, c: Config) => c.copy(outputFormat = v) } text("Output file format")
+
             arg[java.io.File]("<path>...") action {
                 case (v: java.io.File, c: Config) if(v.exists) => c.copy(paths = c.paths :+ v)
                 case _ => sys.error("File doesn't exist")
