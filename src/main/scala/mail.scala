@@ -6,9 +6,13 @@ import javax.mail.internet.MimeMessage
 import java.io.ByteArrayInputStream
 
 object MailCore {
-    def handleRawMessage(raw: String) = {
+    def handleRawMessage(raw: String, outputFormat: String = "txt") = {
         val message: MimeMessage = readMessage(raw)
-        val output: String = MailFormatter.toString(message)
+        val output: String = outputFormat match {
+            case f if(f.toLowerCase() == "rtf") => MailFormatter.toRTF(message)
+            case f if(f.toLowerCase() == "txt") => MailFormatter.toString(message)
+            case _ => MailFormatter.toString(message)
+        }
         output
     }
 
