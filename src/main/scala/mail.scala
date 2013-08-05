@@ -51,7 +51,7 @@ object MailCore {
     }
 
     def handleRawMessage(raw: String)(implicit config: Config): Option[String] = {
-        filter(readMessage(raw)).map { message =>
+        readMessage(raw).flatMap { filter }.map { message =>
             config.outputFormat match {
                 case OutputFormat(f) if(f.toLowerCase() == "rtf") => MailFormatter.toRTF(message)
                 case OutputFormat(f) if(f.toLowerCase() == "txt") => MailFormatter.toString(message)
@@ -60,12 +60,15 @@ object MailCore {
         }
     }
 
-    def readMessage(content: String): MimeMessage = {
+    def readMessage(content: String): Option[MimeMessage] = {
         // from http://stackoverflow.com/questions/3444660/java-email-message-parser
         val s = Session.getDefaultInstance(new Properties())
         val is = new ByteArrayInputStream(content.getBytes())
-        val message = new MimeMessage(s, is)
-        message
+        try {
+            Some(new MimeMessage(s, is))
+        } catch {
+            case x: java.nio.charset.MalformedInputException => { println("Exception: " + x); None }
+        }
     }
 }
 
@@ -83,7 +86,11 @@ object MailHandler {
 
         def readRaw(file: File): Option[String] = {
             if(file.isFile) {
-                Some(io.Source.fromFile(file).mkString)
+                try {
+                    Some(io.Source.fromFile(file).mkString)
+                } catch {
+                    case x: java.nio.charset.MalformedInputException => { println("Exception: " + x); None }
+                }
             } else {
                 None
             }
