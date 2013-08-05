@@ -49,8 +49,15 @@ object MailHandler {
             }
         }
 
+        def addExtension(fpath: String): String = {
+            if(config.appendExtension) {
+                val dot = if(!fpath.endsWith(".")) "." else ""
+                fpath + dot + config.outputFormat.extension
+            } else fpath
+        }
+
         val fpath = file.getPath
-        val outpath = config.outputDirectory + stripFilename(fpath) + config.outputFormat.extension
+        val outpath = config.outputDirectory + addExtension(stripFilename(fpath))
 
         val outputFormatExtension = config.outputFormat.extension
 
