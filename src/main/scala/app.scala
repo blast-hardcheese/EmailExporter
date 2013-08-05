@@ -57,6 +57,8 @@ object app {
             opt[Unit]('a', "all-recipients") action { (_, c: Config) => c.copy(allRecipientsRequired = true) } text("Require all recipients (instead of just some)")
             opt[InternetAddress]('l', "highlight") action { (v: InternetAddress, c: Config) => c.copy(highlightRecipients = c.highlightRecipients :+ v) } text("Highlight particular recipients in To fields") unbounded()
 
+            help("help") text("prints this usage text")
+
             arg[java.io.File]("<path>...") action {
                 case (v: java.io.File, c: Config) if(v.exists) => c.copy(paths = c.paths :+ v)
                 case _ => sys.error("File doesn't exist")
