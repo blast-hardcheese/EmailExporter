@@ -199,6 +199,49 @@ object MailFormatter {
             |$body
             |""".stripMargin
     }
+
+    def toRTF(message: MimeMessage): String = {
+        import com.tutego.jrtf.Rtf.rtf
+        import com.tutego.jrtf.RtfHeader.{color => hcolor, font => hfont}
+        import com.tutego.jrtf.RtfPara
+        import com.tutego.jrtf.RtfPara.p
+        import com.tutego.jrtf.RtfTextPara
+        import com.tutego.jrtf.RtfText
+        import com.tutego.jrtf.RtfText.{color => tcolor, font => tfont, text, backgroundcolor => bgcolor}
+
+        import scala.collection.JavaConversions._
+
+        import java.io.FileWriter
+
+        val ParsedMessage(_headers, body) = parse(message)
+
+        def interleave(text: RtfText, elems:List[RtfText]): List[RtfText] = elems match {
+            case Nil => Nil
+            case elem :: Nil => elem :: Nil
+            case elem :: xs => elem :: text :: interleave(text, xs)
+        }
+        val headers: java.util.Collection[RtfText] = interleave(text("\n"), _headers.map({
+            case h@Header("From", vals) => bgcolor(0, h)
+            case h@Header("Date", vals) => bgcolor(1, h)
+            case h@Header("Subject", vals) => bgcolor(2, h)
+            case h@Header(label, vals) => text(h)
+        })).toIterable
+
+        val headerPara = p(headers)
+        val sepPara = p(text("================================================================================"))
+        val bodyPara = p(body)
+
+        val paras: java.util.Collection[RtfPara] = List(headerPara, sepPara, bodyPara).toIterable
+
+        val r = rtf
+            .header(
+                hcolor(74, 223, 103).at(2), // Green
+                hcolor(248, 239, 116).at(1), // Yellow
+                hcolor(255, 49, 160).at(0) // Magenta
+            ).section(paras)
+
+        r.toString
+    }
 }
 
 // vim: set ts=4 sw=4 et:
