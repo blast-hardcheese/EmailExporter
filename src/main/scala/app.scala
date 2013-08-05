@@ -2,8 +2,10 @@ package se.hardchee.MailConverter
 
 object app {
     def main(args: Array[String]) {
-        val outformat :: files = args.toList
-        MailHandler.processFilePaths(outformat, files)
+        args.toList match {
+            case outformat :: files => MailHandler.processFilePaths(outformat, files)
+            case _ => println("Usage: \"/tmp/out-%s.txt\" \"file1\" \"file2\"")
+        }
     }
 }
 
