@@ -311,11 +311,18 @@ object MailFormatter {
             case elem :: Nil => elem :: Nil
             case elem :: xs => elem :: text :: interleave(text, xs)
         }
+
+        def highlightToCcBcc(l: String, vals: List[Any]) = {
+            text( ( text(l) :: text(": ") :: interleave(text(", "), highlightNames(text(_), bgcolor(3, _), vals) ) ).toIterable: java.util.Collection[RtfText] )
+        }
+
         val headers: java.util.Collection[RtfText] = interleave(text("\n"), _headers.map({
             case h@Header("From", vals) => bgcolor(0, h)
             case h@Header("Date", vals) => bgcolor(1, h)
             case h@Header("Subject", vals) => bgcolor(2, h)
-            case h@Header(l@"To", vals) => text( ( text(l) :: text(": ") :: interleave(text(", "), highlightNames(text(_), bgcolor(3, _), vals) ) ).toIterable: java.util.Collection[RtfText] )
+            case h@Header(l@"To", vals) => highlightToCcBcc(l, vals)
+            case h@Header(l@"Cc", vals) => highlightToCcBcc(l, vals)
+            case h@Header(l@"Bcc", vals) => highlightToCcBcc(l, vals)
             case h@Header(label, vals) => text(h)
         })).toIterable
 
