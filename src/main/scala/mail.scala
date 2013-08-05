@@ -18,8 +18,7 @@ object MailComparisons {
     def compareAddresses(lookingFor: List[InternetAddress], mailHas: List[InternetAddress], allRequired: Boolean = false): Boolean = {
         lazy val comparisons = lookingFor.map { lhs => foldBoolListFindTrue(mailHas.map { rhs => { lhs.getAddress.toLowerCase == rhs.getAddress.toLowerCase } }) }
 
-        if(lookingFor.isEmpty) true
-        else if(!allRequired) foldBoolListFindTrue( comparisons )
+        if(!allRequired) foldBoolListFindTrue( comparisons )
         else foldBoolList( comparisons )
     }
 }
@@ -39,8 +38,8 @@ object MailCore {
         import MailComparisons._
 
         val shouldDisplay: Boolean = List[Boolean](
-            compareAddresses(config.senders, senders),
-            compareAddresses(config.recipients, allRecipients, config.allRecipientsRequired),
+            config.senders.isEmpty || compareAddresses(config.senders, senders),
+            config.recipients.isEmpty || compareAddresses(config.recipients, allRecipients, config.allRecipientsRequired),
 
             (config.untilDate map { untilDate => sentDate.isBefore(untilDate) }),
             (config.fromDate map { fromDate => sentDate.isAfter(fromDate) })
@@ -302,7 +301,7 @@ object MailFormatter {
             val lookingFor: List[InternetAddress] = config.highlightRecipients
             vals match {
                 case Nil => Nil
-                case (x:InternetAddress) :: xs if(MailComparisons.compareAddresses(lookingFor, List[InternetAddress](x))) => highlight(x) :: highlightNames(normal, highlight, xs)
+                case (x:InternetAddress) :: xs if(!lookingFor.isEmpty && MailComparisons.compareAddresses(lookingFor, List[InternetAddress](x))) => highlight(x) :: highlightNames(normal, highlight, xs)
                 case x :: xs => normal(x) :: highlightNames(normal, highlight, xs)
             }
         }
