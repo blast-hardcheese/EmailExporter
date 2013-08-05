@@ -14,10 +14,11 @@ object MailComparisons {
     implicit def fromOption(opt: Option[Boolean]): Boolean = opt.getOrElse(true)
     def foldBoolListFindTrue(bools: List[Boolean]): Boolean = bools.foldLeft(false) { (last: Boolean, next: Boolean) => last || next }
 
-    def compareAddresses(lookingFor: List[InternetAddress], mailHas: List[InternetAddress]): Boolean = {
+    def compareAddresses(lookingFor: List[InternetAddress], mailHas: List[InternetAddress], allRequired: Boolean = false): Boolean = {
         lazy val comparisons = lookingFor.flatMap { lhs => mailHas.map { rhs => lhs.getAddress == rhs.getAddress } }
         if(lookingFor.isEmpty) true
-        else foldBoolListFindTrue( comparisons )
+        else if(!allRequired) foldBoolListFindTrue( comparisons )
+        else foldBoolList( comparisons )
     }
 }
 
