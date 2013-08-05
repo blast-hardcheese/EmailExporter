@@ -227,7 +227,7 @@ object MailUtilities {
 import javax.mail.Message
 
 object MailFormatter {
-    case class Header(label: String, value: List[String]) {
+    case class Header(label: String, value: List[Any]) {
         override def toString = "%s: %s".format(label, value.mkString(", "))
     }
     case class ParsedMessage(headers: List[Header] = List(), body: String)
@@ -244,8 +244,7 @@ object MailFormatter {
         val body = MailUtilities.extractBody(message)
         val attachmentNames: Option[List[String]] = MailUtilities.extractAttachmentNames(message)
 
-        def listToString(vals: List[Any]): List[String] = vals map { _.toString }
-        def convertList(label: String, x: Option[List[_]]): Option[Header] = x map { vals => Header(label, listToString(vals)) }
+        def convertList(label: String, x: Option[List[_]]): Option[Header] = x map { vals => Header(label, vals) }
         def convert(label: String, x: Option[String]):      Option[Header] = x map { vals => Header(label, List(vals)) }
 
         val headers = List(
@@ -271,7 +270,7 @@ object MailFormatter {
             |""".stripMargin
     }
 
-    def toRTF(message: MimeMessage): String = {
+    def toRTF(message: MimeMessage)(implicit config: Config): String = {
         import com.tutego.jrtf.Rtf.rtf
         import com.tutego.jrtf.RtfHeader.{color => hcolor, font => hfont}
         import com.tutego.jrtf.RtfPara
@@ -286,6 +285,21 @@ object MailFormatter {
 
         val ParsedMessage(_headers, body) = parse(message)
 
+        def highlightNames(normal:Object=>RtfText, highlight:Object=>RtfText, vals :List[Any]): List[RtfText] = {
+            import scala.language.implicitConversions
+            implicit def anyToObject(x: Any): Object = x match {
+                case x: Object => x
+                case x => x.toString
+            }
+
+            val lookingFor: List[InternetAddress] = List(new InternetAddress("Devon Stewart <devon@work.tld>"), new InternetAddress("blast@hardchee.se"))  // FIXME: Refactor this out into highlight flags
+            vals match {
+                case Nil => Nil
+                case (x:InternetAddress) :: xs if(MailComparisons.compareAddresses(lookingFor, List[InternetAddress](x))) => highlight(x) :: highlightNames(normal, highlight, xs)
+                case x :: xs => normal(x) :: highlightNames(normal, highlight, xs)
+            }
+        }
+
         def interleave(text: RtfText, elems:List[RtfText]): List[RtfText] = elems match {
             case Nil => Nil
             case elem :: Nil => elem :: Nil
@@ -295,6 +309,7 @@ object MailFormatter {
             case h@Header("From", vals) => bgcolor(0, h)
             case h@Header("Date", vals) => bgcolor(1, h)
             case h@Header("Subject", vals) => bgcolor(2, h)
+            case h@Header(l@"To", vals) => text( ( text(l) :: text(": ") :: highlightNames(text(_), bgcolor(3, _), vals) ).toIterable: java.util.Collection[RtfText] )
             case h@Header(label, vals) => text(h)
         })).toIterable
 
@@ -306,6 +321,7 @@ object MailFormatter {
 
         val r = rtf
             .header(
+                hcolor(110, 201, 255).at(3), // Green
                 hcolor(74, 223, 103).at(2), // Green
                 hcolor(248, 239, 116).at(1), // Yellow
                 hcolor(255, 49, 160).at(0) // Magenta
