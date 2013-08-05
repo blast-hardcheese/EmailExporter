@@ -1,12 +1,11 @@
 package se.hardchee.MailConverter
 
-import scopt.immutable.OptionParser
 case class Config(
     concat: Boolean = false,
     outputDirectory: String = "/tmp/",
     appendExtension: Boolean = true,
 
-    paths: List[String] = List(),
+    paths: List[java.io.File] = List(),
 
 //    inputFormat: String = "cyrus", // TODO: Support other formats
     outputFormat: String = "txt"
@@ -15,17 +14,23 @@ case class Config(
 
 object app {
     def useConfig(config: Config) {
-        MailHandler.processFilePaths(config.outputDirectory + "/%s", config.paths)
+        MailHandler.processFiles(config.outputDirectory + "/%s", config.paths)
     }
 
     def main(args: Array[String]) {
-        val parser = new OptionParser[Config]("EmailExporter", "0.1") { def options = Seq(
-            flag("c", "concat", "Concatenate mail files into one big output file") { (c: Config) => c.copy(concat = true) },
-            opt("o", "outputdir", "Directory to put output files") { (v: String, c: Config) => c.copy(outputDirectory = v) },
-            flag("x", "extension", "Append file extension to format") { (c: Config) => c.copy(appendExtension = true) },
+        val parser = new scopt.OptionParser[Config]("EmailExporter") {
+            head("EmailExporter", "0.1")
 
-            arglistOpt("<files|directories>", "Paths to process") { (v: String, c: Config) => c.copy(paths = c.paths :+ v) }
-        ) }
+            opt[Unit]('c', "concat") action { (_, c: Config) => c.copy(concat = true) } text("Concatenate mail files into one big output file")
+
+            opt[String]('o', "outputdir") action { (v: String, c: Config) => c.copy(outputDirectory = v) } text("Directory to put output files")
+            opt[Unit]('x', "extension") action { (_, c: Config) => c.copy(appendExtension = true) } text("Append file extension to format")
+
+            arg[java.io.File]("<path>...") action {
+                case (v: java.io.File, c: Config) if(v.exists) => c.copy(paths = c.paths :+ v)
+                case _ => sys.error("File doesn't exist")
+            } unbounded() text("Paths to process")
+        }
 
         parser.parse(args, Config()) map { config =>
             useConfig(config)
