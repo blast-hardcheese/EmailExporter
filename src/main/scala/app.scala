@@ -14,6 +14,8 @@ case class Config(
     paths: List[java.io.File] = List(),
 
     senders: List[InternetAddress] = List(),
+    recipients: List[InternetAddress] = List(),
+    allRecipientsRequired: Boolean = false,
 
 //    inputFormat: String = "cyrus", // TODO: Support other formats
     outputFormat: OutputFormat = OutputFormat("txt")
@@ -31,6 +33,7 @@ object app {
         val parser = new scopt.OptionParser[Config]("EmailExporter") {
             import scopt.Read
             import scopt.Read.reads
+
             implicit val dateRead: Read[DateTime] = reads { new DateTime(_) }
             implicit val optionalDateRead: Read[Option[DateTime]] = reads { time => Some(new DateTime(time)) }
             implicit val mailAddressRead: Read[InternetAddress] = reads { new InternetAddress(_) }
@@ -49,6 +52,8 @@ object app {
             opt[Option[DateTime]]("date-until") action { (v: Option[DateTime], c: Config) => c.copy(untilDate = v) } text("Only process messages before this date")
 
             opt[InternetAddress]('s', "sender") action { (v: InternetAddress, c: Config) => c.copy(senders = c.senders :+ v) } text("Only match senders in this list") unbounded()
+            opt[InternetAddress]('r', "recipient") action { (v: InternetAddress, c: Config) => c.copy(recipients = c.recipients :+ v) } text("Only match recipients in this list") unbounded()
+            opt[Unit]('a', "all-recipients") action { (_, c: Config) => c.copy(allRecipientsRequired = true) } text("Require all recipients (instead of just some)")
 
             arg[java.io.File]("<path>...") action {
                 case (v: java.io.File, c: Config) if(v.exists) => c.copy(paths = c.paths :+ v)

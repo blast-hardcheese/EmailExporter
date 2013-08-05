@@ -7,6 +7,7 @@ import java.io.ByteArrayInputStream
 
 import org.joda.time.DateTime
 import javax.mail.internet.InternetAddress
+import javax.mail.Message.RecipientType
 
 object MailComparisons {
     import scala.language.implicitConversions
@@ -15,7 +16,8 @@ object MailComparisons {
     def foldBoolListFindTrue(bools: List[Boolean]): Boolean = bools.foldLeft(false) { (last: Boolean, next: Boolean) => last || next }
 
     def compareAddresses(lookingFor: List[InternetAddress], mailHas: List[InternetAddress], allRequired: Boolean = false): Boolean = {
-        lazy val comparisons = lookingFor.flatMap { lhs => mailHas.map { rhs => lhs.getAddress == rhs.getAddress } }
+        lazy val comparisons = lookingFor.map { lhs => foldBoolListFindTrue(mailHas.map { rhs => { lhs.getAddress.toLowerCase == rhs.getAddress.toLowerCase } }) }
+
         if(lookingFor.isEmpty) true
         else if(!allRequired) foldBoolListFindTrue( comparisons )
         else foldBoolList( comparisons )
@@ -23,14 +25,22 @@ object MailComparisons {
 }
 
 object MailCore {
+    def getRecipientType(message: MimeMessage, rtype: RecipientType) = Option(message.getRecipients(rtype)).map { _.toList } getOrElse(List())
+
     def filter(message: MimeMessage)(implicit config: Config): Option[MimeMessage] = {
         val sentDate = new DateTime(message.getSentDate)
-        val senders: List[InternetAddress] = message.getFrom.toList map { address => new InternetAddress(address.toString) }
+        val senders:List[InternetAddress] = message.getFrom.toList map { address => new InternetAddress(address.toString) }
+        val allRecipients: List[InternetAddress] = List(
+            getRecipientType(message, RecipientType.TO),
+            getRecipientType(message, RecipientType.CC),
+            getRecipientType(message, RecipientType.BCC)
+        ).flatten map { address => new InternetAddress(address.toString) }
 
         import MailComparisons._
 
         val shouldDisplay: Boolean = List[Boolean](
             compareAddresses(config.senders, senders),
+            compareAddresses(config.recipients, allRecipients, config.allRecipientsRequired),
 
             (config.untilDate map { untilDate => sentDate.isBefore(untilDate) }),
             (config.fromDate map { fromDate => sentDate.isAfter(fromDate) })
