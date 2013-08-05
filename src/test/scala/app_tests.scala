@@ -4,7 +4,7 @@ import se.hardchee.MailConverter
 
 object AppTester {
     def main(_args: Array[String]) {
-        val args = if(_args.isEmpty) { Array("/tmp/mail/out-%s.txt", "sample/99.", "sample/95.", "sample/foofoofoo") } else { _args }
+        val args = if(_args.isEmpty) { Array("-f", "rtf", "-o", "/tmp/mail/", "sample/99.", "sample/95.") } else { _args }
         MailConverter.app.main(args)
     }
 }
