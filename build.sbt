@@ -1,3 +1,5 @@
+import AssemblyKeys._ // put this at the top of the file
+
 scalaVersion := "2.10.0"
 
 libraryDependencies += "com.sun.mail" % "javax.mail" % "1.5.0"
@@ -13,3 +15,5 @@ scalacOptions += "-deprecation"
 scalacOptions += "-feature"
 
 scalacOptions += "-unchecked"
+
+assemblySettings
