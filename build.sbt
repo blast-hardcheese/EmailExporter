@@ -1,5 +1,7 @@
 import AssemblyKeys._ // put this at the top of the file
 
+version := "0.2"
+
 scalaVersion := "2.10.0"
 
 libraryDependencies += "com.sun.mail" % "javax.mail" % "1.5.0"

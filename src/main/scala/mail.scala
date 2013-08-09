@@ -27,8 +27,8 @@ object MailCore {
     def getRecipientType(message: MimeMessage, rtype: RecipientType) = Option(message.getRecipients(rtype)).map { _.toList } getOrElse(List())
 
     def filter(message: MimeMessage)(implicit config: Config): Option[MimeMessage] = {
-        val sentDate = new DateTime(message.getSentDate)
-        val senders:List[InternetAddress] = message.getFrom.toList map { address => new InternetAddress(address.toString) }
+        val sentDate = Option(message.getSentDate) map { new DateTime(_) }
+        val senders:List[InternetAddress] = Option(message.getFrom).map({ _.toList.map({ address => new InternetAddress(address.toString) }) }).getOrElse(List())
         val allRecipients: List[InternetAddress] = List(
             getRecipientType(message, RecipientType.TO),
             getRecipientType(message, RecipientType.CC),
@@ -41,8 +41,8 @@ object MailCore {
             config.senders.isEmpty || compareAddresses(config.senders, senders),
             config.recipients.isEmpty || compareAddresses(config.recipients, allRecipients, config.allRecipientsRequired),
 
-            (config.untilDate map { untilDate => sentDate.isBefore(untilDate) }),
-            (config.fromDate map { fromDate => sentDate.isAfter(fromDate) })
+            (sentDate flatMap { date => (config.untilDate map { untilDate => date.isBefore(untilDate) }) } ),
+            (sentDate flatMap { date => (config.fromDate map { fromDate => date.isAfter(fromDate) }) } )
         )
 
         if(shouldDisplay) Some(message)
@@ -80,7 +80,7 @@ import org.joda.time.DateTimeZone
 object MailHandler {
     val defaultConfig = Config()
 
-    def processFile(file: java.io.File)(implicit config: Config = defaultConfig) {
+    def processFile(file: File, base: Option[File] = None)(implicit config: Config = defaultConfig) {
         def stripFilename(path: String) = path.split("/").toList.last
 
         def readRaw(file: File): Option[String] = {
@@ -102,26 +102,42 @@ object MailHandler {
             } else fpath
         }
 
-        val fpath = file.getPath
-        val outpath = config.outputDirectory + addExtension(stripFilename(fpath))
+        def getUniquePrefix(file: File, base: Option[File]): String = {
+            base.flatMap({ b =>
+                val bslash = b.getPath + "/"
+                if(file.getPath.startsWith(bslash)) {
+                    Some(file.getPath.substring(bslash.length))
+                } else {
+                    None
+                }
+            }).getOrElse("")
+        }
 
-        val outputFormatExtension = config.outputFormat.extension
+        if(file.exists && file.isDirectory) {
+            processDirectory(file, base)
+        } else {
+            val uniquePrefix = getUniquePrefix(file, base)
+            val fpath = file.getPath
+            val outpath = config.outputDirectory + addExtension(uniquePrefix)
 
-        readRaw(file).flatMap { MailCore.handleRawMessage } map { println("Output: " + outpath); writeOut(outpath, _) }
+            val outputFormatExtension = config.outputFormat.extension
+
+            readRaw(file).flatMap { MailCore.handleRawMessage } map { file => println("Output: " + outpath); writeOut(outpath, file) }
+        }
     }
 
-    def processFiles(files: List[java.io.File])(implicit config: Config = defaultConfig) {
-        files.map { processFile }
+    def processFiles(files: List[File], base: Option[File] = None)(implicit config: Config = defaultConfig) {
+        files.map { file => processFile(file, base) }
     }
 
     def processFilePaths(_files: List[String])(implicit config: Config = defaultConfig) {
-        val files = _files.map({ new java.io.File(_) })
+        val files = _files.map({ new File(_) })
         processFiles(files)
     }
 
-    def processDirectory(directory: java.io.File)(implicit config: Config = defaultConfig) {
+    def processDirectory(directory: File, base: Option[File] = None)(implicit config: Config = defaultConfig) {
             if(directory.isDirectory) {
-                Option(directory.listFiles).map({ fpaths => processFiles(fpaths.toList) })
+                Option(directory.listFiles).map({ fpaths => processFiles(fpaths.toList, base) })
             }
     }
 
@@ -134,15 +150,24 @@ object MailHandler {
 
     def processConfig(implicit config: Config) {
         for(file <- config.paths) file match {
-            case dir if(dir.exists && dir.isDirectory) => processDirectory(dir)
+            case dir if(dir.exists && dir.isDirectory) => processDirectory(dir, Some(dir))
             case file if(file.exists && file.isFile) => processFile(file)
         }
     }
 
     def writeOut(outpath: String, message: String) {
-        val output = new FileOutputStream(new File(outpath))
-        output.write(message.getBytes)
-        output.close()
+        Option(new File(outpath).getParent).flatMap({ parent =>
+            val parentDirectory = new File(parent)
+            if(!parentDirectory.exists) {
+                if(parentDirectory.mkdirs) Some(parentDirectory)
+                else None
+            }
+            Some(parentDirectory)
+        }).map({ _ =>
+            val output = new FileOutputStream(new File(outpath))
+            output.write(message.getBytes)
+            output.close()
+        })
     }
 }
 
@@ -151,8 +176,8 @@ object ImplicitFieldFormatters {
 
     val desiredTimezone = DateTimeZone.forID("America/Los_Angeles")
 
-    implicit def makeDate(date: java.util.Date): Option[String] = {
-        Option(date).map({
+    implicit def makeDate(date: Option[java.util.Date]): Option[String] = {
+        date.map({
             new DateTime(_)
                 .withZone(desiredTimezone)
                 .toString("Y/M/d H:m:s (Z)")
@@ -245,8 +270,8 @@ object MailFormatter {
         val to = message.getRecipients(Message.RecipientType.TO)
         val cc = message.getRecipients(Message.RecipientType.CC)
         val bcc = message.getRecipients(Message.RecipientType.BCC)
-        val date = message.getSentDate()
-        val subject = message.getSubject()
+        val date = Option(message.getSentDate())
+        val subject = Option(message.getSubject())
         val body = MailUtilities.extractBody(message)
         val attachmentNames: Option[List[String]] = MailUtilities.extractAttachmentNames(message)
 

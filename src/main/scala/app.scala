@@ -39,7 +39,7 @@ object app {
             implicit val optionalDateRead: Read[Option[DateTime]] = reads { time => Some(new DateTime(time)) }
             implicit val mailAddressRead: Read[InternetAddress] = reads { new InternetAddress(_) }
 
-            head("EmailExporter", "0.1")
+            head("EmailExporter", "0.2")
 
             opt[Unit]('c', "concat") action { (_, c: Config) => c.copy(concat = true) } text("Concatenate mail files into one big output file")
 
