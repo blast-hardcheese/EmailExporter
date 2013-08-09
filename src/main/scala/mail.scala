@@ -120,6 +120,7 @@ object MailHandler {
             }).getOrElse("")
         }
 
+        println("Processing " + file.getPath)
         if(file.exists && file.isDirectory) {
             processDirectory(file, base)
         } else {
@@ -131,6 +132,7 @@ object MailHandler {
 
             readRaw(file).flatMap { MailCore.handleRawMessage } map { file => println("Output: " + outpath); writeOut(outpath, file) }
         }
+        println("Done!")
     }
 
     def processFiles(files: List[File], base: Option[File] = None)(implicit config: Config = defaultConfig) {
