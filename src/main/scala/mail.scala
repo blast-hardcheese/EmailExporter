@@ -80,7 +80,7 @@ import org.joda.time.DateTimeZone
 object MailHandler {
     val defaultConfig = Config()
 
-    def processFile(file: java.io.File)(implicit config: Config = defaultConfig) {
+    def processFile(file: File, base: Option[File] = None)(implicit config: Config = defaultConfig) {
         def stripFilename(path: String) = path.split("/").toList.last
 
         def readRaw(file: File): Option[String] = {
@@ -110,16 +110,16 @@ object MailHandler {
         readRaw(file).flatMap { MailCore.handleRawMessage } map { println("Output: " + outpath); writeOut(outpath, _) }
     }
 
-    def processFiles(files: List[java.io.File])(implicit config: Config = defaultConfig) {
-        files.map { processFile }
+    def processFiles(files: List[File], base: Option[File] = None)(implicit config: Config = defaultConfig) {
+        files.map { file => processFile(file, base) }
     }
 
     def processFilePaths(_files: List[String])(implicit config: Config = defaultConfig) {
-        val files = _files.map({ new java.io.File(_) })
+        val files = _files.map({ new File(_) })
         processFiles(files)
     }
 
-    def processDirectory(directory: java.io.File)(implicit config: Config = defaultConfig) {
+    def processDirectory(directory: File)(implicit config: Config = defaultConfig) {
             if(directory.isDirectory) {
                 Option(directory.listFiles).map({ fpaths => processFiles(fpaths.toList) })
             }
