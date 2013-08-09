@@ -156,9 +156,18 @@ object MailHandler {
     }
 
     def writeOut(outpath: String, message: String) {
-        val output = new FileOutputStream(new File(outpath))
-        output.write(message.getBytes)
-        output.close()
+        Option(new File(outpath).getParent).flatMap({ parent =>
+            val parentDirectory = new File(parent)
+            if(!parentDirectory.exists) {
+                if(parentDirectory.mkdirs) Some(parentDirectory)
+                else None
+            }
+            Some(parentDirectory)
+        }).map({ _ =>
+            val output = new FileOutputStream(new File(outpath))
+            output.write(message.getBytes)
+            output.close()
+        })
     }
 }
 
