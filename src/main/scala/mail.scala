@@ -27,8 +27,8 @@ object MailCore {
     def getRecipientType(message: MimeMessage, rtype: RecipientType) = Option(message.getRecipients(rtype)).map { _.toList } getOrElse(List())
 
     def filter(message: MimeMessage)(implicit config: Config): Option[MimeMessage] = {
-        val sentDate = new DateTime(message.getSentDate)
-        val senders:List[InternetAddress] = message.getFrom.toList map { address => new InternetAddress(address.toString) }
+        val sentDate = Option(message.getSentDate) map { new DateTime(_) }
+        val senders:List[InternetAddress] = Option(message.getFrom).map({ _.toList.map({ address => new InternetAddress(address.toString) }) }).getOrElse(List())
         val allRecipients: List[InternetAddress] = List(
             getRecipientType(message, RecipientType.TO),
             getRecipientType(message, RecipientType.CC),
@@ -41,8 +41,8 @@ object MailCore {
             config.senders.isEmpty || compareAddresses(config.senders, senders),
             config.recipients.isEmpty || compareAddresses(config.recipients, allRecipients, config.allRecipientsRequired),
 
-            (config.untilDate map { untilDate => sentDate.isBefore(untilDate) }),
-            (config.fromDate map { fromDate => sentDate.isAfter(fromDate) })
+            (sentDate flatMap { date => (config.untilDate map { untilDate => date.isBefore(untilDate) }) } ),
+            (sentDate flatMap { date => (config.fromDate map { fromDate => date.isAfter(fromDate) }) } )
         )
 
         if(shouldDisplay) Some(message)
@@ -166,8 +166,8 @@ object ImplicitFieldFormatters {
 
     val desiredTimezone = DateTimeZone.forID("America/Los_Angeles")
 
-    implicit def makeDate(date: java.util.Date): Option[String] = {
-        Option(date).map({
+    implicit def makeDate(date: Option[java.util.Date]): Option[String] = {
+        date.map({
             new DateTime(_)
                 .withZone(desiredTimezone)
                 .toString("Y/M/d H:m:s (Z)")
@@ -260,8 +260,8 @@ object MailFormatter {
         val to = message.getRecipients(Message.RecipientType.TO)
         val cc = message.getRecipients(Message.RecipientType.CC)
         val bcc = message.getRecipients(Message.RecipientType.BCC)
-        val date = message.getSentDate()
-        val subject = message.getSubject()
+        val date = Option(message.getSentDate())
+        val subject = Option(message.getSubject())
         val body = MailUtilities.extractBody(message)
         val attachmentNames: Option[List[String]] = MailUtilities.extractAttachmentNames(message)
 
