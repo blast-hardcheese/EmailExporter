@@ -25,22 +25,38 @@ object MailComparisons {
 }
 
 object MailCore {
-    def getRecipientType(message: MimeMessage, rtype: RecipientType): List[Address] = {
+    def getRecipientType(message: MimeMessage, rtype: RecipientType): List[InternetAddress] = {
         try {
-            Option(message.getRecipients(rtype)).map { _.toList } getOrElse(List())
+            getAddressList({ () => message.getRecipients(rtype) })
         } catch {
             case x: javax.mail.internet.AddressException => { println("Exception: " + x); List(new InternetAddress("Malformed Recipients <error@localhost>")) }
         }
     }
 
+    def getAddressList(f: (() => Array[Address])): List[InternetAddress] = {
+        try {
+            Option(f()).map({ _.toList }).getOrElse(List()).map({ addr => new InternetAddress(addr.toString) })
+        } catch {
+            case x: javax.mail.internet.AddressException => { println("Exception: " + x); List(new InternetAddress("Malformed Recipients <error@localhost>")) }
+        }
+    }
+
+    def makeInternetAddress(s: String ): InternetAddress = {
+        try {
+            new InternetAddress(s)
+        } catch {
+            case x: javax.mail.internet.AddressException => { println("Exception: " + x); new InternetAddress("Malformed Recipients <error@localhost>") }
+        }
+    }
+
     def filter(message: MimeMessage)(implicit config: Config): Option[MimeMessage] = {
         val sentDate = Option(message.getSentDate) map { new DateTime(_) }
-        val senders:List[InternetAddress] = Option(message.getFrom).map({ _.toList.map({ address => new InternetAddress(address.toString) }) }).getOrElse(List())
+        val senders:List[InternetAddress] = getAddressList({ () => message.getFrom }) // .map({ _.toList.map({ address => makeInternetAddress(address.toString) }) }).getOrElse(List())
         val allRecipients: List[InternetAddress] = List(
             getRecipientType(message, RecipientType.TO),
             getRecipientType(message, RecipientType.CC),
             getRecipientType(message, RecipientType.BCC)
-        ).flatten map { address => new InternetAddress(address.toString) }
+        ).flatten map { address => makeInternetAddress(address.toString) }
 
         import MailComparisons._
 
@@ -290,7 +306,7 @@ object MailFormatter {
         import se.hardchee.MailConverter.ImplicitFieldFormatters._
         import se.hardchee.MailConverter.MailCore.getRecipientType
 
-        val from = message.getFrom()
+        val from = MailCore.getAddressList({ () => message.getFrom })
         val to = getRecipientType(message, Message.RecipientType.TO)
         val cc = getRecipientType(message, Message.RecipientType.CC)
         val bcc = getRecipientType(message, Message.RecipientType.BCC)
