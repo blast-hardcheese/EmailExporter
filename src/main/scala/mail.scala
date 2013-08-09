@@ -122,7 +122,7 @@ object MailHandler {
 
             val outputFormatExtension = config.outputFormat.extension
 
-            readRaw(file).flatMap { MailCore.handleRawMessage } map { println("Output: " + outpath); writeOut(outpath, _) }
+            readRaw(file).flatMap { MailCore.handleRawMessage } map { file => println("Output: " + outpath); writeOut(outpath, file) }
         }
     }
 
