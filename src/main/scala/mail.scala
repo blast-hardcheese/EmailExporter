@@ -227,7 +227,15 @@ import javax.mail.internet.MimeMessage
 import javax.mail.BodyPart
 
 object MailUtilities {
-    def makeFileName(bp: BodyPart): Option[String] = Option(bp.getFileName()).map({ name => val size = makeFileSize(bp.getSize()); s"$name ($size)" })
+    def makeFileName(bp: BodyPart): Option[String] = {
+        val fileName: Option[String] = try {
+            Option(bp.getFileName())
+        } catch {
+            case x: Throwable => { println("Exception: " + x); Some("Unable to read filename (" + x + ")") }
+        }
+
+        fileName.map({ name => val size = makeFileSize(bp.getSize()); s"$name ($size)" })
+    }
     def makeFileSize(_size: Int) = {
         def findFileSize(size: Int) = "KMG".foldLeft[Tuple2[Double, Char]]( (size.toDouble, 'B') ) {
             case ((size, last), next) if(size / 1024 > 1.5) => (size / 1024, next)
