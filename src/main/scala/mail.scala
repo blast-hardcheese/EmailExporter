@@ -6,6 +6,7 @@ import javax.mail.internet.MimeMessage
 import java.io.ByteArrayInputStream
 
 import org.joda.time.DateTime
+import javax.mail.Address
 import javax.mail.internet.InternetAddress
 import javax.mail.Message.RecipientType
 
@@ -24,7 +25,13 @@ object MailComparisons {
 }
 
 object MailCore {
-    def getRecipientType(message: MimeMessage, rtype: RecipientType) = Option(message.getRecipients(rtype)).map { _.toList } getOrElse(List())
+    def getRecipientType(message: MimeMessage, rtype: RecipientType): List[Address] = {
+        try {
+            Option(message.getRecipients(rtype)).map { _.toList } getOrElse(List())
+        } catch {
+            case x: javax.mail.internet.AddressException => { println("Exception: " + x); List(new InternetAddress("Malformed Recipients <error@localhost>")) }
+        }
+    }
 
     def filter(message: MimeMessage)(implicit config: Config): Option[MimeMessage] = {
         val sentDate = Option(message.getSentDate) map { new DateTime(_) }
@@ -184,8 +191,12 @@ object ImplicitFieldFormatters {
         })
     }
 
-    implicit def wrapList(x: Array[_]): Option[List[_]] = {
+    implicit def wrapArray(x: Array[_]): Option[List[_]] = {
         Option(x).map { _.toList }
+    }
+
+    implicit def wrapList(x: List[_]): Option[List[_]] = {
+        Option(x)
     }
 
     implicit def wrapString(x: String): Option[String] = Option(x)
@@ -265,11 +276,12 @@ object MailFormatter {
 
     def parse(message: MimeMessage): ParsedMessage = {
         import se.hardchee.MailConverter.ImplicitFieldFormatters._
+        import se.hardchee.MailConverter.MailCore.getRecipientType
 
         val from = message.getFrom()
-        val to = message.getRecipients(Message.RecipientType.TO)
-        val cc = message.getRecipients(Message.RecipientType.CC)
-        val bcc = message.getRecipients(Message.RecipientType.BCC)
+        val to = getRecipientType(message, Message.RecipientType.TO)
+        val cc = getRecipientType(message, Message.RecipientType.CC)
+        val bcc = getRecipientType(message, Message.RecipientType.BCC)
         val date = Option(message.getSentDate())
         val subject = Option(message.getSubject())
         val body = MailUtilities.extractBody(message)
