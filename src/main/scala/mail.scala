@@ -219,6 +219,16 @@ object MailUtilities {
         f"$size%.2f $suffix%c"
     }
 
+    def bodyPartGetContent(mbp: Object): Option[Object] = {
+        try { mbp match {
+            case x: MimeMessage => Some(x.getContent)
+            case x: MimeBodyPart => Some(x.getContent())
+            case _ => None
+        }} catch {
+            case x: java.io.UnsupportedEncodingException => Some("// Encoding error, email was unable to be read.")
+        }
+    }
+
     def getBodyPart(multipart: MimeMultipart, identifier: String): Option[String] = {
         val preamble = Option(multipart.getPreamble())
 
@@ -227,8 +237,7 @@ object MailUtilities {
                 last
             else {
                 multipart.getBodyPart(i) match {
-                    case mbp: MimeBodyPart if( mbp.getContentType().startsWith(identifier)
-                                            && mbp.getContent().toString != "") => Some(mbp.getContent().toString)
+                    case mbp: MimeBodyPart if(mbp.getContentType().startsWith(identifier)) => bodyPartGetContent(mbp) map { _.toString }
                     case _ => None
                 }
             }
@@ -238,7 +247,7 @@ object MailUtilities {
     def extractAllBodyParts(mp: MimeMultipart): List[BodyPart] = {
         ((0 until mp.getCount()).flatMap { i => {
             val bp = mp.getBodyPart(i)
-            val r = Option(bp.getContent()) match {
+            val r = bodyPartGetContent(bp) match {
                 case Some(mp: MimeMultipart) => extractAllBodyParts(mp)
                 case _ => List()
             }
@@ -248,7 +257,7 @@ object MailUtilities {
     }
 
     def extractAttachmentNames(message: MimeMessage): Option[List[String]] = {
-        (Option(message.getContent()) match {
+        (bodyPartGetContent(message) match {
             case Some(mp:MimeMultipart) => Some(extractAllBodyParts(mp).flatMap( makeFileName ))
             case _ => None
         }) match {
@@ -258,7 +267,7 @@ object MailUtilities {
     }
 
     def extractBody(message: MimeMessage): String = {
-        (Option(message.getContent()) match {
+        (bodyPartGetContent(message) match {
             case Some(mp:MimeMultipart) => MailUtilities.getBodyPart(mp, "text/plain")
             case Some(m) => Some(m.toString)
             case None => None
