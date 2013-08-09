@@ -211,11 +211,14 @@ object ImplicitFieldFormatters {
     }
 
     implicit def wrapArray(x: Array[_]): Option[List[_]] = {
-        Option(x).map { _.toList }
+        Option(x).map { _.toList }.flatMap( wrapList(_) )
     }
 
     implicit def wrapList(x: List[_]): Option[List[_]] = {
-        Option(x)
+        Option(x).flatMap({
+            case x:List[_] if(!x.isEmpty) => Some(x)
+            case _ => None
+        })
     }
 
     implicit def wrapString(x: String): Option[String] = Option(x)
