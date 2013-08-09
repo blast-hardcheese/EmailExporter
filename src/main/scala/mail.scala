@@ -113,12 +113,16 @@ object MailHandler {
             }).getOrElse("")
         }
 
-        val fpath = file.getPath
-        val outpath = config.outputDirectory + addExtension(stripFilename(fpath))
+        if(file.exists && file.isDirectory) {
+            processDirectory(file)
+        } else {
+            val fpath = file.getPath
+            val outpath = config.outputDirectory + addExtension(stripFilename(fpath))
 
-        val outputFormatExtension = config.outputFormat.extension
+            val outputFormatExtension = config.outputFormat.extension
 
-        readRaw(file).flatMap { MailCore.handleRawMessage } map { println("Output: " + outpath); writeOut(outpath, _) }
+            readRaw(file).flatMap { MailCore.handleRawMessage } map { println("Output: " + outpath); } //writeOut(outpath, _) }
+        }
     }
 
     def processFiles(files: List[File], base: Option[File] = None)(implicit config: Config = defaultConfig) {
