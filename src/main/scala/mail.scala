@@ -114,14 +114,15 @@ object MailHandler {
         }
 
         if(file.exists && file.isDirectory) {
-            processDirectory(file)
+            processDirectory(file, base)
         } else {
+            val uniquePrefix = getUniquePrefix(file, base)
             val fpath = file.getPath
-            val outpath = config.outputDirectory + addExtension(stripFilename(fpath))
+            val outpath = config.outputDirectory + addExtension(uniquePrefix)
 
             val outputFormatExtension = config.outputFormat.extension
 
-            readRaw(file).flatMap { MailCore.handleRawMessage } map { println("Output: " + outpath); } //writeOut(outpath, _) }
+            readRaw(file).flatMap { MailCore.handleRawMessage } map { println("Output: " + outpath); writeOut(outpath, _) }
         }
     }
 
@@ -134,9 +135,9 @@ object MailHandler {
         processFiles(files)
     }
 
-    def processDirectory(directory: File)(implicit config: Config = defaultConfig) {
+    def processDirectory(directory: File, base: Option[File] = None)(implicit config: Config = defaultConfig) {
             if(directory.isDirectory) {
-                Option(directory.listFiles).map({ fpaths => processFiles(fpaths.toList, Some(directory)) })
+                Option(directory.listFiles).map({ fpaths => processFiles(fpaths.toList, base) })
             }
     }
 
@@ -149,7 +150,7 @@ object MailHandler {
 
     def processConfig(implicit config: Config) {
         for(file <- config.paths) file match {
-            case dir if(dir.exists && dir.isDirectory) => processDirectory(dir)
+            case dir if(dir.exists && dir.isDirectory) => processDirectory(dir, Some(dir))
             case file if(file.exists && file.isFile) => processFile(file)
         }
     }
