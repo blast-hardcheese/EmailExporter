@@ -102,6 +102,17 @@ object MailHandler {
             } else fpath
         }
 
+        def getUniquePrefix(file: File, base: Option[File]): String = {
+            base.flatMap({ b =>
+                val bslash = b.getPath + "/"
+                if(file.getPath.startsWith(bslash)) {
+                    Some(file.getPath.substring(bslash.length))
+                } else {
+                    None
+                }
+            }).getOrElse("")
+        }
+
         val fpath = file.getPath
         val outpath = config.outputDirectory + addExtension(stripFilename(fpath))
 
@@ -121,7 +132,7 @@ object MailHandler {
 
     def processDirectory(directory: File)(implicit config: Config = defaultConfig) {
             if(directory.isDirectory) {
-                Option(directory.listFiles).map({ fpaths => processFiles(fpaths.toList) })
+                Option(directory.listFiles).map({ fpaths => processFiles(fpaths.toList, Some(directory)) })
             }
     }
 
