@@ -252,7 +252,7 @@ object MailUtilities {
             case x: MimeBodyPart => Some(x.getContent())
             case _ => None
         }} catch {
-            case x: java.io.UnsupportedEncodingException => Some("// Encoding error, email was unable to be read.")
+            case x: Throwable => Some("// Encoding error, email was unable to be read.\n" + x)
         }
     }
 
