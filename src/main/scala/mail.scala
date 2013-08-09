@@ -126,11 +126,12 @@ object MailHandler {
         } else {
             val uniquePrefix = getUniquePrefix(file, base)
             val fpath = file.getPath
-            val outpath = config.outputDirectory + addExtension(uniquePrefix)
+            val outpath = new File(config.outputDirectory + "/" + addExtension(uniquePrefix)) // TODO: Fix all file paths, this stuff is ridiculous
 
             val outputFormatExtension = config.outputFormat.extension
 
-            readRaw(file).flatMap { MailCore.handleRawMessage } map { file => println("Output: " + outpath); writeOut(outpath, file) }
+            if(outpath.exists) println("File exists, skipping...")
+            else readRaw(file).flatMap { MailCore.handleRawMessage } map { file => println("Output: " + outpath); writeOut(outpath, file) }
         }
         println("Done!")
     }
@@ -164,8 +165,8 @@ object MailHandler {
         }
     }
 
-    def writeOut(outpath: String, message: String) {
-        Option(new File(outpath).getParent).flatMap({ parent =>
+    def writeOut(outpath: File, message: String) {
+        Option(outpath.getParent).flatMap({ parent =>
             val parentDirectory = new File(parent)
             if(!parentDirectory.exists) {
                 if(parentDirectory.mkdirs) Some(parentDirectory)
@@ -173,7 +174,7 @@ object MailHandler {
             }
             Some(parentDirectory)
         }).map({ _ =>
-            val output = new FileOutputStream(new File(outpath))
+            val output = new FileOutputStream(outpath)
             output.write(message.getBytes)
             output.close()
         })
